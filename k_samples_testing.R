@@ -19,7 +19,8 @@ algo1 <- function(J, c, x, log = TRUE, mu, sigma){
   s = lgamma(2*c) - lgamma(2*c + length(x)) - 2^J * lgamma(c*J^2)
   
   # count in which partition observation fall
-  n_k = rep(0, 2^J)
+  n_k <- rep(0, 2^J)
+  
   for (i in 1:length(x)){
     n_k[ ceiling(2^J*pnorm(x[i], mean = mu, sd = sigma))] = n_k[ ceiling(2^J*pnorm(x[i], mean = mu, sd = sigma))] + 1
   }
@@ -40,7 +41,6 @@ algo1 <- function(J, c, x, log = TRUE, mu, sigma){
         if(nk != 0){
           s = s + sum(log(c*j^2 + 0:(nk-1))) - sum(log(2*c*(j+1)^2 + 0:(nk-1)))
         }
-        
         
       }
       

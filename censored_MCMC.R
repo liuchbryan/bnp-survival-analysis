@@ -64,6 +64,8 @@ compute_s0 <- function(xj, xj_prop, J, mu_hat, sd_hat){
 
 censored_MH <- function(t, delta, J, B = 100, M = 200, V = 1.5){
   
+  # if no censored data in (t,delta)
+  
   
   # check lengths
   N <- length(t)
@@ -79,10 +81,11 @@ censored_MH <- function(t, delta, J, B = 100, M = 200, V = 1.5){
   # do i need to do it here?
   
   data <- data.frame(time = t, censor = delta)
-  fit <- fit_data(data, dist = 'lnorm')
+  fit <- parmsurvfit::fit_data(data, dist = 'lnorm')
   
   mu_hat <- fit$estimate[1]
   sd_hat <- fit$estimate[2]
+  rm(data)
   
   # sample latent log censored deaths
   x <- sample_censored(x, censored_indices, mu_hat, sd_hat)
@@ -118,62 +121,68 @@ censored_MH <- function(t, delta, J, B = 100, M = 200, V = 1.5){
     
     # STEP 1 # -------------------------------------------
     
-    x_prop <- sample_censored(x, censored_indices, mu_hat, sd_hat)
-    # pwise comparison x_prob[censored_indices] vs x[censored_indices]
-    
-    k <- ceiling(2^J*pnorm(x, mean = mu_hat, sd = sd_hat))[censored_indices]
-    k_prop <- ceiling(2^J*pnorm(x_prop, mean = mu_hat, sd = sd_hat))[censored_indices]
-
-
-    s0 <- mapply(compute_s0, k, k_prop, 
-           MoreArgs = list(J = J,
-                           mu_hat = mu_hat,
-                           sd_hat = sd_hat))
-    
-    
-    alpha <- rep(0, censored_length)
-    
-    
-    alpha[which(s0 != J)] <- log(c*J^2 + n[[J]][k_prop]) - log(c*J^2 + n[[J]][k])
-
-
-    # What if s0 = J-1  V
-    # What if s0 = J X we want the for loop not to run
-    
-    for (s in min(s0+1, J-1):(J-1)){
+    if(censored_length > 0){
       
-      # might need to make sure min(s0) < J-1 but not sure
-      indices <- which(s0 < s)
-      alpha[indices] <- (alpha[indices] +
-                           log(c*s^2 + n[[s]][ ceiling(2^(s-J)*k_prop[indices])]) -
-                           log(c*s^2 + n[[s]][ ceiling(2^(s-J)*k[indices])]) +
-                           log(2*c*(s+1)^2 + n[[s]][ ceiling(2^(s-J)*k[indices])] ) -
-                           log(2*c*(s+1)^2 + n[[s]][ ceiling(2^(s-J)*k_prop[indices])])
-                         )
+      x_prop <- sample_censored(x, censored_indices, mu_hat, sd_hat)
+      # pwise comparison x_prob[censored_indices] vs x[censored_indices]
+      
+      k <- ceiling(2^J*pnorm(x, mean = mu_hat, sd = sd_hat))[censored_indices]
+      k_prop <- ceiling(2^J*pnorm(x_prop, mean = mu_hat, sd = sd_hat))[censored_indices]
+      
+      
+      s0 <- mapply(compute_s0, k, k_prop, 
+                   MoreArgs = list(J = J,
+                                   mu_hat = mu_hat,
+                                   sd_hat = sd_hat))
+      
+      
+      alpha <- rep(0, censored_length)
+      
+      
+      alpha[which(s0 != J)] <- log(c*J^2 + n[[J]][k_prop]) - log(c*J^2 + n[[J]][k])
+      
+      
+      # What if s0 = J-1  V
+      # What if s0 = J X we want the for loop not to run
+      
+      for (s in min(s0+1, J-1):(J-1)){
+        
+        # might need to make sure min(s0) < J-1 but not sure
+        indices <- which(s0 < s)
+        alpha[indices] <- (alpha[indices] +
+                             log(c*s^2 + n[[s]][ ceiling(2^(s-J)*k_prop[indices])]) -
+                             log(c*s^2 + n[[s]][ ceiling(2^(s-J)*k[indices])]) +
+                             log(2*c*(s+1)^2 + n[[s]][ ceiling(2^(s-J)*k[indices])] ) -
+                             log(2*c*(s+1)^2 + n[[s]][ ceiling(2^(s-J)*k_prop[indices])])
+        )
+      }
+      
+      #(e)
+      u <- runif(censored_length)
+      changed_indices <- which(u < exp(alpha))
+      
+      # for all u 
+      # x has dimension N
+      # u has dimension censored_length -> ch_indices is referring to 'censored dataset' indices
+      x[censored_indices[changed_indices]] <- x_prop[censored_indices[changed_indices]]
+      
+      # s0 = J 
+      #bool <- ( min(s0) == J) -> might implement above
+      for (s in min(s0+1, J):J){
+        
+        # if (bool){break}
+        
+        indices <- which(s0 < s)
+        
+        n[[s]][ceiling(2^(s-J)*k_prop[indices])] <- n[[s]][ceiling(2^(s-J)*k_prop[indices])] + 1
+        n[[s]][2^(s-J)*ceiling(2^(s-J)*k[indices])] <- n[[s]][ ceiling(2^(s-J)*k[indices]) ] - 1
+        
+      }
+      
+      
+      
     }
     
-    #(e)
-    u <- runif(censored_length)
-    changed_indices <- which(u < exp(alpha))
-    
-    # for all u 
-    # x has dimension N
-    # u has dimension censored_length -> ch_indices is referring to 'censored dataset' indices
-    x[censored_indices[changed_indices]] <- x_prop[censored_indices[changed_indices]]
-
-    # s0 = J 
-    #bool <- ( min(s0) == J) -> might implement above
-    for (s in min(s0+1, J):J){
-      
-      # if (bool){break}
-      
-      indices <- which(s0 < s)
-      
-      n[[s]][ceiling(2^(s-J)*k_prop[indices])] <- n[[s]][ceiling(2^(s-J)*k_prop[indices])] + 1
-      n[[s]][2^(s-J)*ceiling(2^(s-J)*k[indices])] <- n[[s]][ ceiling(2^(s-J)*k[indices]) ] - 1
-      
-    }
-  
     
     # STEP 2 etc -------------------------
     
@@ -212,11 +221,8 @@ censored_MH <- function(t, delta, J, B = 100, M = 200, V = 1.5){
 }
 
 # Finish it
-# -> Compute MLEs  (# https://rdrr.io/cran/NADA/man/cenmle.html)
-# -> Actually compute statistic and perform permutation test
-
-2 * 200 * (300)
-1 * 300
+# -> Compute MLEs  (# https://rdrr.io/cran/NADA/man/cenmle.html) V
+# -> Actually compute statistic and perform permutation test TO DO
 
 
 
