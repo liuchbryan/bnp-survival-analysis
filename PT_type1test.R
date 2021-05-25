@@ -62,8 +62,6 @@ results$censoring_rate <- opt$rate
 
 opt$rate <- gsub('\\.', '_', opt$rate)
 
-results <- data.frame(me = 'Andrea')
-
 filename <- paste0('type1error_MH_rate_', opt$rate, '.rds')
 saveRDS(results,file=filename)
 

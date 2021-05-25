@@ -1,5 +1,6 @@
 library(survival)
 library(IDPSurvival) # install.packages("IDPSurvival")
+source('censored_permutation_test.R')
 
 ######################
 ## Polya Tree Stuff ##
@@ -58,12 +59,25 @@ DPTest <- function(data){
 }
 
 PTTest <- function(data){
-  return(1)
+  
+  # data <- data.frame(time, delta, group)
+  t1 <- data$time[which(data$group == 1)]
+  t2 <- data$time[which(data$group == 2)]
+
+  delta1 <- as.integer(data$delta[which(data$group == 1)])
+  delta2 <- as.integer(data$delta[which(data$group == 2)])
+  
+  # times, delta, group
+  p_value <- censored_permutation_test(t1 = t1,t2 = t2, delta1 = delta1, delta2 = delta2)
+  decision <- ifelse(pvalue < 0.05, 1, 0)
+  
+  # Return 1 if rejects the null or 0 if accept the null
+  return(decision)
 }
 
 
 # function that performs monte-carlo experiment for same hazards 
-SHExperiment <- function(iters, n, censoringrate){
+SHExperiment <- function(iters, n = 50, censoringrate){
   
   iter <- 0
   lrtest <- 0 # counts number of times log-rank test rejects the null
@@ -75,6 +89,9 @@ SHExperiment <- function(iters, n, censoringrate){
   dptestind <- 0 # counts number of times dirichlet process prior rejects the null
   
   while(iter < iters){
+    
+    print(paste0('Iteration number:', iter))
+    
     group <- c(rep(1, n), rep(2, n)) # group id: treatment group id
     
     survival <- c(rexp(n, rate = 1), # survival times: treatment group 1
@@ -126,6 +143,7 @@ SHExperiment <- function(iters, n, censoringrate){
       # update counters whenever we get decisive result from dirichlet process prior
       iter <- iter + 1
       
+      # if dp cant decide
       if(dp == 2){
         lrtestind <- lrtestind + lr
         pttestind <- pttestind + pt
@@ -152,7 +170,7 @@ SHExperiment <- function(iters, n, censoringrate){
 
 
 # function that performs monte-carlo experiment for proportional hazards
-PHExperiment <- function(iters, n, censoringrate){
+PHExperiment <- function(iters, n = 50, censoringrate){
   
   iter <- 0
   lrtest <- 0 # counts number of times log-rank test rejects the null
@@ -241,7 +259,7 @@ PHExperiment <- function(iters, n, censoringrate){
 }
 
 # function that performs monte-carlo experiment for early hazard difference
-EHDExperiment <- function(iters, n, censoringrate){
+EHDExperiment <- function(iters, n=50, censoringrate){
   
   iter <- 0
   lrtest <- 0 # counts number of times log-rank test rejects the null
@@ -331,7 +349,7 @@ EHDExperiment <- function(iters, n, censoringrate){
 
 
 # function that performs monte-carlo experiment for late hazard difference
-LHDExperiment <- function(iters, n, censoringrate){
+LHDExperiment <- function(iters, n=50, censoringrate){
   
   iter <- 0
   lrtest <- 0 # counts number of times log-rank test rejects the null
@@ -415,6 +433,7 @@ LHDExperiment <- function(iters, n, censoringrate){
   pttestind <- pttestind/iters
   dptestind <- dptestind/iters
   
+
   return(data.frame(lrtest, pttest, dptest, 
                     lrtestind, pttestind, 
                     dptestind))
@@ -422,9 +441,9 @@ LHDExperiment <- function(iters, n, censoringrate){
 
 
 # run the monte-carlo experiments for each simulated dataset
-iters = 10; cr = 0.00
+iters = 1; cr = 0.75
 SHExperiment(iters = iters, n = 50, censoringrate = cr)
 PHExperiment(iters = iters, n = 50, censoringrate = cr)
 EHDExperiment(iters = iters, n = 50, censoringrate = cr)
-LHDExperiment(iters = iters, n = 50, censoringrate = cr)
+LHDExperiment(iters = iters, n = 50, censoringrate = cr) 
 

@@ -81,12 +81,12 @@ censored_MH <- function(t, delta, J, B = 100, M = 200, V = 1.5){
   # compute MLEs 
   # do i need to do it here?
   
-  data <- data.frame(time = t, censor = delta)
-  fit <- parmsurvfit::fit_data(data, dist = 'lnorm')
+  data_mcmc <- data.frame(time = t, censor = delta)
+  fit <- parmsurvfit::fit_data(data_mcmc, dist = 'lnorm')
   
   mu_hat <- fit$estimate[1]
   sd_hat <- fit$estimate[2]
-  rm(data)
+  rm(data_mcmc)
   
   # sample latent log censored deaths
   x <- sample_censored(log(t), censored_indices, mu_hat, sd_hat)
