@@ -2,9 +2,16 @@ library(survival)
 library(IDPSurvival) # install.packages("IDPSurvival")
 source('censored_permutation_test.R')
 
-######################
-## Polya Tree Stuff ##
-######################
+require(optparse)
+
+option_list <- list(
+  make_option("--rate", default = 0.5,
+              help = 'Experimental Censoring Rate')
+)
+
+opt <- parse_args(OptionParser(option_list=option_list))
+
+cr <- opt$rate
 
 
 ######################
@@ -68,8 +75,8 @@ PTTest <- function(data){
   delta2 <- as.integer(data$delta[which(data$group == 2)])
   
   # times, delta, group
-  p_value <- censored_permutation_test(t1 = t1,t2 = t2, delta1 = delta1, delta2 = delta2)
-  decision <- ifelse(pvalue < 0.05, 1, 0)
+  p_value <- censored_permutation_test(t1 = t1,t2 = t2, delta1 = delta1, delta2 = delta2)$p_value
+  decision <- ifelse(p_value < 0.05, 1, 0)
   
   # Return 1 if rejects the null or 0 if accept the null
   return(decision)
@@ -440,10 +447,4 @@ LHDExperiment <- function(iters, n=50, censoringrate){
 }
 
 
-# run the monte-carlo experiments for each simulated dataset
-iters = 1; cr = 0.75
-SHExperiment(iters = iters, n = 50, censoringrate = cr)
-PHExperiment(iters = iters, n = 50, censoringrate = cr)
-EHDExperiment(iters = iters, n = 50, censoringrate = cr)
-LHDExperiment(iters = iters, n = 50, censoringrate = cr) 
 
