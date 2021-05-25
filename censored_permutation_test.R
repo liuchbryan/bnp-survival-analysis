@@ -16,7 +16,7 @@ check_arguments <- function(t, delta){
 }
 
 
-censored_permutation_test <- function(t1, t2, delta1, delta2, N_permutations){
+censored_permutation_test <- function(t1, t2, delta1, delta2, N_permutations = 200){
   
   # simple check
   check_arguments(t1, delta1)
@@ -35,6 +35,7 @@ censored_permutation_test <- function(t1, t2, delta1, delta2, N_permutations){
   # bar_p0 <- censored_MH(t = t0, delta = delta0, J = J)$Ep # Do we actually need this??
   bar_p1 <- censored_MH(t = t1, delta = delta1, J = J)$Ep
   bar_p2 <- censored_MH(t = t2, delta = delta2, J = J)$Ep
+  
   statistic_numerator <- bar_p1 * bar_p2
   
   
@@ -42,7 +43,7 @@ censored_permutation_test <- function(t1, t2, delta1, delta2, N_permutations){
   # now shuffle
   for (i_perm in 1:N_permutations){
     
-    print(paste0('Permutation Number: ', i_perm, '\r'))
+    # print(paste0('Permutation Number: ', i_perm, '\r'))
     
     # permute and divide in new groups with same sizes as t1, t2
     new_groups_indices <- sample(1:L0)
@@ -68,21 +69,4 @@ censored_permutation_test <- function(t1, t2, delta1, delta2, N_permutations){
   return(list(p_value = p_value, statistic_numerator = statistic_numerator, numerator_distribution = numerator_distribution))
 }
 
-
-# t1 <- mapply(min,x1, c1)
-# # proportion of censored
-# mean(t1 == c1)
-
-x1 <- rexp(50)
-c1 <- runif(50, min = 1, max = 2)
-t1 <- mapply(min,x1, c1)
-delta1 <- as.numeric( x1 < c1 )
-
-
-x2 <- rexp(50)
-c2 <- runif(50, min = 1, max = 2)
-t2 <- mapply(min,x2, c2)
-delta2 <- as.numeric( x2 < c2 )
-
-censored_permutation_test(t1 = t1, t2 = t2, delta1 = delta1, delta2 = delta2, 10)
 

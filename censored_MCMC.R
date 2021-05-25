@@ -39,12 +39,13 @@ sample_censored <- function(x,censored_indices, mu_hat, sd_hat){
   
   censored_length <- length(censored_indices)
   
-  u <- runif(censored_length, min = pnorm(a, mean = mu_hat, sd = sd_hat),
-             max = pnorm(b, mean = mu_hat, sd = sd_hat)) # could just set this to one
+  u <- runif(censored_length, min = pnorm(a[censored_indices], mean = mu_hat, sd = sd_hat),
+                              max = 1) # could just set this to one
   
-  x[censored_indices] <- qnorm(u, mean = mu_hat, sd = sd_hat)
+  x_prop <- x
+  x_prop[censored_indices] <- qnorm(u, mean = mu_hat, sd = sd_hat)
   
-  return(x)
+  return(x_prop)
 }
 
 # function that takes x, x_prop -> determines s0
@@ -88,7 +89,7 @@ censored_MH <- function(t, delta, J, B = 100, M = 200, V = 1.5){
   rm(data)
   
   # sample latent log censored deaths
-  x <- sample_censored(x, censored_indices, mu_hat, sd_hat)
+  x <- sample_censored(log(t), censored_indices, mu_hat, sd_hat)
   
   # initialise stuff
   c <- 1
@@ -123,7 +124,7 @@ censored_MH <- function(t, delta, J, B = 100, M = 200, V = 1.5){
     
     if(censored_length > 0){
       
-      x_prop <- sample_censored(x, censored_indices, mu_hat, sd_hat)
+      x_prop <- sample_censored(log(t), censored_indices, mu_hat, sd_hat)
       # pwise comparison x_prob[censored_indices] vs x[censored_indices]
       
       k <- ceiling(2^J*pnorm(x, mean = mu_hat, sd = sd_hat))[censored_indices]
