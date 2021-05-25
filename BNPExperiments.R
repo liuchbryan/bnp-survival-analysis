@@ -58,13 +58,14 @@ LRTest <- function(data){
 
 # function that implements the dirichlet prior test
 DPTest <- function(data){
-  htest <- isurvdiff(Surv(data$time, data$delta) ~ data$group, 
+  htest <- isurvdiff(Surv(data$time, data$delta) ~ data$group, alternative = "greater",
                      display = FALSE, nsamples = 5000, level = 0.95)
   
   decision <- htest$h
   return(decision)
 }
 
+# function that implements the polya tree prior test
 PTTest <- function(data){
   
   # data <- data.frame(time, delta, group)
@@ -86,18 +87,21 @@ PTTest <- function(data){
 # function that performs monte-carlo experiment for same hazards 
 SHExperiment <- function(iters, n = 50, censoringrate){
   
-  iter <- 0
+  iter <- 0 # number of monte-carlo iterations
+  ndecisive <- 0 # number of simulations where dptest is decisive
+  nindecisive <- 0 # number of simulations where dptest is not decisive
+  
+  
   lrtest <- 0 # counts number of times log-rank test rejects the null
   pttest <- 0 # counts number of times polya tree prior rejects the null
   dptest <- 0 # counts number of times dirichlet process prior rejects the null
   
-  lrtestind <- 0 # counts number of times log-rank test rejects the null
-  pttestind <- 0 # counts number of times polya tree prior rejects the null
-  dptestind <- 0 # counts number of times dirichlet process prior rejects the null
-  
+  lrtestind <- 0 # counts number of times log-rank test rejects the null when dptest indecisive
+  pttestind <- 0 # counts number of times polya tree prior rejects the null when dptest indecisive
+  print(paste0('Total Iterations:', iters))
   while(iter < iters){
     
-    print(paste0('Iteration number:', iter))
+    print(paste0('Iteration number:', iter + 1))
     
     group <- c(rep(1, n), rep(2, n)) # group id: treatment group id
     
@@ -152,43 +156,45 @@ SHExperiment <- function(iters, n = 50, censoringrate){
       
       # if dp cant decide
       if(dp == 2){
+        nindecisive <- nindecisive + 1
         lrtestind <- lrtestind + lr
         pttestind <- pttestind + pt
-        dptestind <- dptestind + 1
+        
       } else{
+        ndecisive <- ndecisive + 1
+        
         lrtest <- lrtest + lr
         pttest <- pttest + pt
         dptest <- dptest + dp
       }
     }
-    
-    lrtest <- lrtest/iters
-    pttest <- pttest/iters
-    dptest <- dptest/iters
-    
-    lrtestind <- lrtestind/iters
-    pttestind <- pttestind/iters
-    dptestind <- dptestind/iters
-    
+
     return(data.frame(lrtest, pttest, dptest, 
                       lrtestind, pttestind, 
-                      dptestind))
+                      ndecisive, nindecisive))
 }
 
 
 # function that performs monte-carlo experiment for proportional hazards
 PHExperiment <- function(iters, n = 50, censoringrate){
   
-  iter <- 0
+  iter <- 0 # number of monte-carlo iterations
+  ndecisive <- 0 # number of simulations where dptest is decisive
+  nindecisive <- 0 # number of simulations where dptest is not decisive
+  
+  
   lrtest <- 0 # counts number of times log-rank test rejects the null
   pttest <- 0 # counts number of times polya tree prior rejects the null
   dptest <- 0 # counts number of times dirichlet process prior rejects the null
   
-  lrtestind <- 0 # counts number of times log-rank test rejects the null
-  pttestind <- 0 # counts number of times polya tree prior rejects the null
-  dptestind <- 0 # counts number of times dirichlet process prior rejects the null
+  lrtestind <- 0 # counts number of times log-rank test rejects the null when dptest indecisive
+  pttestind <- 0 # counts number of times polya tree prior rejects the null when dptest indecisive
   
+  print(paste0('Total Iterations:', iters))
   while(iter < iters){
+    
+    print(paste0('Iteration number:', iter + 1))
+    
     group <- c(rep(1, n), rep(2, n)) # group id: treatment group id
     
     survival <- c(rexp(n, rate = 1), # survival times: treatment group 1
@@ -241,44 +247,46 @@ PHExperiment <- function(iters, n = 50, censoringrate){
     # update counters whenever we get decisive result from dirichlet process prior
     iter <- iter + 1
     
+    # if dp cant decide
     if(dp == 2){
+      nindecisive <- nindecisive + 1
       lrtestind <- lrtestind + lr
       pttestind <- pttestind + pt
-      dptestind <- dptestind + 1
+      
     } else{
+      ndecisive <- ndecisive + 1
+      
       lrtest <- lrtest + lr
       pttest <- pttest + pt
       dptest <- dptest + dp
     }
   }
   
-  lrtest <- lrtest/iters
-  pttest <- pttest/iters
-  dptest <- dptest/iters
-  
-  lrtestind <- lrtestind/iters
-  pttestind <- pttestind/iters
-  dptestind <- dptestind/iters
-  
   return(data.frame(lrtest, pttest, dptest, 
                     lrtestind, pttestind, 
-                    dptestind))
+                    ndecisive, nindecisive))
 }
 
 # function that performs monte-carlo experiment for early hazard difference
 EHDExperiment <- function(iters, n=50, censoringrate){
   
-  iter <- 0
+  
+  iter <- 0 # number of monte-carlo iterations
+  ndecisive <- 0 # number of simulations where dptest is decisive
+  nindecisive <- 0 # number of simulations where dptest is not decisive
+  
+  
   lrtest <- 0 # counts number of times log-rank test rejects the null
   pttest <- 0 # counts number of times polya tree prior rejects the null
   dptest <- 0 # counts number of times dirichlet process prior rejects the null
   
-  lrtestind <- 0 # counts number of times log-rank test rejects the null
-  pttestind <- 0 # counts number of times polya tree prior rejects the null
-  dptestind <- 0 # counts number of times dirichlet process prior rejects the null
+  lrtestind <- 0 # counts number of times log-rank test rejects the null when dptest indecisive
+  pttestind <- 0 # counts number of times polya tree prior rejects the null when dptest indecisive
   
+  print(paste0('Total Iterations:', iters))
   while(iter < iters){
-    print(paste0('Iteration number: ', iter))
+    
+    print(paste0('Iteration number:', iter + 1))
     
     group <- c(rep(1, n), rep(2, n)) # group id: treatment group id
     
@@ -332,45 +340,48 @@ EHDExperiment <- function(iters, n=50, censoringrate){
     # update counters whenever we get decisive result from dirichlet process prior
     iter <- iter + 1
     
+    # if dp cant decide
     if(dp == 2){
+      nindecisive <- nindecisive + 1
       lrtestind <- lrtestind + lr
       pttestind <- pttestind + pt
-      dptestind <- dptestind + 1
+      
     } else{
+      ndecisive <- ndecisive + 1
+      
       lrtest <- lrtest + lr
       pttest <- pttest + pt
       dptest <- dptest + dp
     }
   }
   
-  lrtest <- lrtest/iters
-  pttest <- pttest/iters
-  dptest <- dptest/iters
-  
-  lrtestind <- lrtestind/iters
-  pttestind <- pttestind/iters
-  dptestind <- dptestind/iters
-  
   return(data.frame(lrtest, pttest, dptest, 
                     lrtestind, pttestind, 
-                    dptestind))
+                    ndecisive, nindecisive))
 }
 
 
 # function that performs monte-carlo experiment for late hazard difference
 LHDExperiment <- function(iters, n=50, censoringrate){
   
-  iter <- 0
+  iter <- 0 # number of monte-carlo iterations
+  ndecisive <- 0 # number of simulations where dptest is decisive
+  nindecisive <- 0 # number of simulations where dptest is not decisive
+  
+  
   lrtest <- 0 # counts number of times log-rank test rejects the null
   pttest <- 0 # counts number of times polya tree prior rejects the null
   dptest <- 0 # counts number of times dirichlet process prior rejects the null
   
-  lrtestind <- 0 # counts number of times log-rank test rejects the null
-  pttestind <- 0 # counts number of times polya tree prior rejects the null
-  dptestind <- 0 # counts number of times dirichlet process prior rejects the null
+  lrtestind <- 0 # counts number of times log-rank test rejects the null when dptest indecisive
+  pttestind <- 0 # counts number of times polya tree prior rejects the null when dptest indecisive
   
+  print(paste0('Total Iterations:', iters))
   
-  for(iter in 1:iters){
+  while(iter < iters){
+    
+    print(paste0('Iteration number:', iter + 1))
+    
     group <- c(rep(1, n), rep(2, n)) # group id: treatment group id
     
     survival <- c(rpwexp(n, rate = c(2.00, 0.40), intervals = c(0.50)), # survival times: treatment group 1
@@ -423,29 +434,24 @@ LHDExperiment <- function(iters, n=50, censoringrate){
     # update counters whenever we get decisive result from dirichlet process prior
     iter <- iter + 1
     
+    # if dp cant decide
     if(dp == 2){
+      nindecisive <- nindecisive + 1
       lrtestind <- lrtestind + lr
       pttestind <- pttestind + pt
-      dptestind <- dptestind + 1
+      
     } else{
+      ndecisive <- ndecisive + 1
+      
       lrtest <- lrtest + lr
-      dptest <- dptest + dp
       pttest <- pttest + pt
+      dptest <- dptest + dp
     }
   }
   
-  lrtest <- lrtest/iters
-  pttest <- pttest/iters
-  dptest <- dptest/iters
-  
-  lrtestind <- lrtestind/iters
-  pttestind <- pttestind/iters
-  dptestind <- dptestind/iters
-  
-
   return(data.frame(lrtest, pttest, dptest, 
                     lrtestind, pttestind, 
-                    dptestind))
+                    ndecisive, nindecisive))
 }
 
 
