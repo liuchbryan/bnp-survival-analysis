@@ -278,6 +278,8 @@ EHDExperiment <- function(iters, n=50, censoringrate){
   dptestind <- 0 # counts number of times dirichlet process prior rejects the null
   
   while(iter < iters){
+    print(paste0('Iteration number: ', iter))
+    
     group <- c(rep(1, n), rep(2, n)) # group id: treatment group id
     
     survival <- c(rpwexp(n, rate = c(0.75, 3.00, 1.00), intervals = c(0.4, 0.2)), # survival times: treatment group 1
