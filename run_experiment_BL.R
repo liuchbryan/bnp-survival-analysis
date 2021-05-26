@@ -21,7 +21,7 @@ results <-  EHDExperiment(iters = iters, n = 25, censoringrate = cr)
 # Jose
 # results <- LHDExperiment(iters = iters, n = 25, censoringrate = cr)
 
-cr <- gsub('\\.', '_', cr)
+cr <- gsub('\\.', '-', cr)
 
-filename <- paste0('Experiment_EHD', cr, '.rds')
+filename <- paste0('Experiment_EHD_', n, '_', cr, '.rds')
 saveRDS(results,file=filename)
