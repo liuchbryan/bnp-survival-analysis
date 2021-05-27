@@ -1,0 +1,9 @@
+,lrtest,pttest,dptest,lrtestind,pttestind,ndecisive,nindecisive,censoring
+1,94,92,0,0,0,100,0,0
+2,86,87,0,0,0,100,0,0.25
+3,71,80,0,0,0,100,0,0.5
+4,41,58,0,18,18,70,30,0.75
+
+
+
+59 - 94
